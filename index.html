@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>臺灣觀光：從疫情到復甦 (2019-2026)</title>
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Noto+Sans+TC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Embedded Data -->
+    <script src="data.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Dynamic Background Mesh -->
+    <div class="mesh-background">
+        <div class="mesh-sphere mesh-sphere-1"></div>
+        <div class="mesh-sphere mesh-sphere-2"></div>
+        <div class="mesh-sphere mesh-sphere-3"></div>
+    </div>
+
+    <div class="dashboard-container">
+        <!-- Sidebar / Navigation -->
+        <aside class="sidebar">
+            <div class="logo-container">
+                <div class="glow-orb"></div>
+                <h1>Formosa<span>Insight</span></h1>
+            </div>
+            <p class="subtitle">交通部觀光署數據視覺化</p>
+            <nav class="nav-menu">
+                <button class="nav-btn active" data-target="overview">總體趨勢與復甦</button>
+                <button class="nav-btn" data-target="continents">五大洲板塊分析</button>
+                <button class="nav-btn" data-target="countries">核心市場排行榜</button>
+            </nav>
+            <div class="info-box">
+                <h4>資料來源</h4>
+                <p>交通部觀光署<br>來臺旅客按居住地統計</p>
+                <p class="date-range">解析年份：2019 - 2026</p>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header KPIs -->
+            <header class="kpi-header">
+                <div class="kpi-card glass">
+                    <h3 class="kpi-label">2025年 來臺總人數 (穩定復甦期)</h3>
+                    <h2 class="kpi-value" id="kpi-current-year">Loading...</h2>
+                    <div class="kpi-trend positive" id="kpi-trend-current">--</div>
+                </div>
+                <div class="kpi-card glass">
+                    <h3 class="kpi-label">核心市場貢獻度 (2025)</h3>
+                    <h2 class="kpi-value" id="kpi-top-market">Loading...</h2>
+                </div>
+                <div class="kpi-card glass">
+                    <h3 class="kpi-label">全球復甦率 (vs 2019)</h3>
+                    <h2 class="kpi-value" id="kpi-recovery-rate">Loading...</h2>
+                    <div class="kpi-trend" id="kpi-recovery-status">--</div>
+                </div>
+            </header>
+
+            <!-- Dashboard Views -->
+            <div class="view-container">
+
+                <!-- View 1: Overview -->
+                <section id="overview" class="dashboard-view active">
+                    <div class="chart-panel wide glass">
+                        <div class="panel-header">
+                            <div class="title-group">
+                                <h2>觀光復甦曲線 (2019-2026)</h2>
+                                <p>觀察選定目標在後疫情時代的回流軌跡</p>
+                            </div>
+                            <div class="controls">
+                                <label for="trendSelect">分析對象：</label>
+                                <select id="trendSelect">
+                                    <optgroup label="總體數據">
+                                        <option value="小計">全體來臺旅客</option>
+                                    </optgroup>
+                                    <optgroup label="五大洲板塊">
+                                        <option value="亞洲地區">亞洲地區</option>
+                                        <option value="美洲地區">美洲地區</option>
+                                        <option value="歐洲地區">歐洲地區</option>
+                                        <option value="大洋洲地區">大洋洲地區</option>
+                                        <option value="非洲地區">非洲地區</option>
+                                    </optgroup>
+                                    <optgroup label="核心國家">
+                                        <option value="日本">日本 (Japan)</option>
+                                        <option value="韓國">韓國 (Korea)</option>
+                                        <option value="美國">美國 (USA)</option>
+                                        <option value="香港">香港 (HK)</option>
+                                        <option value="新加坡">新加坡 (Singapore)</option>
+                                        <option value="馬來西亞">馬來西亞 (Malaysia)</option>
+                                        <option value="泰國">泰國 (Thailand)</option>
+                                        <option value="越南">越南 (Vietnam)</option>
+                                        <option value="菲律賓">菲律賓 (Philippines)</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas id="recoveryChart"></canvas>
+                        </div>
+                        <div class="market-insight-bar glass">
+                            <div class="insight-label">💡 <span id="insight-target-name">全體來臺</span> 市場動態：</div>
+                            <div class="insight-content" id="seasonal-insight">分析數據中...</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- View 2: Continents -->
+                <section id="continents" class="dashboard-view hidden">
+                    <div class="grid-2-col">
+                        <div class="chart-panel glass">
+                            <div class="panel-header">
+                                <h2>市場復甦深度 (2025 vs 2019)</h2>
+                                <p>對比各大洲回流至疫情前水準的百分比</p>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="continentRadarChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-panel glass">
+                            <div class="panel-header">
+                                <h2>復甦動能對比</h2>
+                                <p>各大洲近兩年 (2024-2025) 的增長態勢</p>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="continentBarChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- View 3: Countries -->
+                <section id="countries" class="dashboard-view hidden">
+                    <div class="chart-panel wide glass">
+                        <div class="panel-header">
+                            <h2>核心市場排行榜 (主要國家)</h2>
+                            <p>排名前段班國家的年度觀光客總量變化</p>
+                            <div class="controls">
+                                <select id="yearSelect">
+                                    <option value="all">所有年份加總</option>
+                                    <option value="2019">2019 (疫情前)</option>
+                                    <option value="2023">2023 (復甦初期)</option>
+                                    <option value="2024">2024 (穩定復甦)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas id="countryRankingChart"></canvas>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loader" class="loader-overlay">
+        <div class="spinner"></div>
+        <p>載入並解析觀光數據中...</p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

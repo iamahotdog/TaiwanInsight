@@ -1,0 +1,15 @@
+# Python caches
+__pycache__/
+*.pyc
+
+# Local data sources (optional, keep if you want them on GitHub)
+# *.csv
+
+# System files
+.DS_Store
+Thumbs.db
+
+# My temporary scripts
+convert.py
+force_convert.py
+extract_data.py

@@ -173,11 +173,13 @@ function renderCharts() {
     renderRecoveryChart('小計');
     renderContinentsChart();
     renderCountriesChart(state.detailedData, 'all');
+    renderMonthlyComparisonChart();
+    renderResidencePieChart();
 }
 
 // 1. Recovery Trend (Line)
 function renderRecoveryChart(metricKey) {
-    const isDetailed = ['日本', '韓國', '美國', '香港', '新加坡', '馬來西亞', '泰國', '越南', '菲律賓'].includes(metricKey);
+    const isDetailed = ['日本', '韓國', '美國', '香港', '新加坡', '馬來西亞', '泰國', '越南', '菲律賓', '中國大陸'].includes(metricKey);
     const data = isDetailed ? state.detailedData : state.overviewData;
     
     const yearlyData = {};
@@ -322,7 +324,7 @@ function renderContinentsChart() {
 
 // 3. Country Rankings (Horizontal Bar)
 function renderCountriesChart(data, targetYear) {
-    const countries = ['日本', '韓國', '香港', '美國', '新加坡', '馬來西亞', '泰國', '越南', '菲律賓'];
+    const countries = ['日本', '韓國', '香港', '美國', '新加坡', '馬來西亞', '泰國', '越南', '菲律賓', '中國大陸'];
     const countryData = {};
     countries.forEach(c => countryData[c] = 0);
 
@@ -349,7 +351,7 @@ function renderCountriesChart(data, targetYear) {
             datasets: [{
                 label: '觀光客人數',
                 data: values,
-                backgroundColor: ['#00f2fe', '#4facfe', '#a18cd1', '#fbc2eb', '#fe5f75', '#ff9a9e', '#fecfef', '#e0c3fc', '#8fd3f4'],
+                backgroundColor: ['#00f2fe', '#4facfe', '#a18cd1', '#fbc2eb', '#fe5f75', '#ff9a9e', '#fecfef', '#e0c3fc', '#8fd3f4', '#f8f9fa'],
                 borderRadius: 8
             }]
         },
@@ -362,6 +364,149 @@ function renderCountriesChart(data, targetYear) {
                 y: { grid: { display: false }, ticks: { color: '#fff' } }
             },
             plugins: { legend: { display: false } }
+        }
+    });
+}
+
+// 4. Monthly Multi-Year Comparison (Line)
+function renderMonthlyComparisonChart() {
+    const data = state.overviewData;
+    const years = [2023, 2024, 2025, 2026];
+    const yearColors = {
+        2023: '#ff7e5f', // Orange
+        2024: '#a1c4fd', // Light Blue
+        2025: '#4facfe', // Blue
+        2026: '#fe5f75'  // Red
+    };
+
+    const datasets = years.map(year => {
+        const yearPoints = Array(12).fill(null);
+        data.forEach(row => {
+            const y = parseInt(row['年別']) + 1911;
+            const m = parseInt(row['月份']) - 1;
+            if (y === year) {
+                yearPoints[m] = row['小計'];
+            }
+        });
+        
+        return {
+            label: `${year}年`,
+            data: yearPoints,
+            borderColor: yearColors[year],
+            backgroundColor: yearColors[year],
+            borderWidth: 2,
+            tension: 0.3,
+            pointRadius: 3,
+            fill: false
+        };
+    });
+
+    const ctx = document.getElementById('monthlyComparisonChart').getContext('2d');
+    if (state.charts['monthlyComparison']) state.charts['monthlyComparison'].destroy();
+
+    state.charts['monthlyComparison'] = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } }
+            },
+            scales: {
+                y: { grid: { color: CHART_COLORS.grid }, ticks: { callback: v => (v/10000).toFixed(0) + 'w' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+// 5. Residence Distribution (Pie/Doughnut)
+function renderResidencePieChart() {
+    const data = state.detailedData;
+    
+    // Find latest year and month available
+    let latestYear = 0;
+    let latestMonth = 0;
+    data.forEach(row => {
+        const y = parseInt(row['年別']) + 1911;
+        const m = parseInt(row['月份']);
+        if (y > latestYear || (y === latestYear && m > latestMonth)) {
+            latestYear = y;
+            latestMonth = m;
+        }
+    });
+
+    document.getElementById('pie-chart-title').innerText = `${latestYear}年${latestMonth}月 客源分佈`;
+
+    const countries = ['日本', '韓國', '香港', '澳門', '越南', '泰國', '馬來西亞', '新加坡', '菲律賓', '美國', '中國大陸'];
+    const countryData = {};
+    countries.forEach(c => countryData[c] = 0);
+    let otherTotal = 0;
+    let total = 0;
+
+    data.forEach(row => {
+        const y = parseInt(row['年別']) + 1911;
+        const m = parseInt(row['月份']);
+        if (y === latestYear && m === latestMonth) {
+            let rowSum = 0;
+            countries.forEach(c => {
+                const val = row[c] || 0;
+                countryData[c] += val;
+                rowSum += val;
+            });
+            const subTotal = row['小計'] || 0;
+            otherTotal += (subTotal - rowSum);
+            total += subTotal;
+        }
+    });
+
+    const categories = Object.entries(countryData)
+        .filter(i => i[1] > 0)
+        .sort((a,b) => b[1] - a[1]);
+    
+    categories.push(['其他', otherTotal]);
+
+    const labels = categories.map(i => i[0]);
+    const values = categories.map(i => i[1]);
+
+    const ctx = document.getElementById('residencePieChart').getContext('2d');
+    if (state.charts['residencePie']) state.charts['residencePie'].destroy();
+
+    state.charts['residencePie'] = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: [
+                    '#fe5f75', '#4facfe', '#a18cd1', '#fbc2eb', '#00f2fe', 
+                    '#ff9a9e', '#fecfef', '#e0c3fc', '#8fd3f4', '#84fab0', 
+                    '#fccb90', '#94a3b8'
+                ],
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right', labels: { boxWidth: 8, font: { size: 10 } } },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => {
+                            const val = ctx.raw;
+                            const perc = ((val / total) * 100).toFixed(1);
+                            return `${ctx.label}: ${val.toLocaleString()} (${perc}%)`;
+                        }
+                    }
+                }
+            },
+            cutout: '60%'
         }
     });
 }

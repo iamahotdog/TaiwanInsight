@@ -47,8 +47,22 @@
         </aside>
 
         <!-- Main Content Area -->
+        <!-- Main Content Area -->
         <main class="main-content">
-            <!-- Header KPIs -->
+            <section class="summary-hero glass">
+                <div class="hero-left">
+                    <div class="hero-title">來臺旅客統計 <span id="hero-date-range">2026年1月1日至今</span></div>
+                    <div class="hero-main-value" id="hero-total-visitors">0</div>
+                </div>
+                <div class="hero-right">
+                    <div class="hero-right-header">當前佔比最高前五國</div>
+                    <div class="top-ranking-list" id="hero-top-countries">
+                        <!-- Dynamic items -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Header KPIs (Modified to be more compact) -->
             <header class="kpi-header">
                 <div class="kpi-card glass">
                     <h3 class="kpi-label">2025年 來臺總人數 (穩定復甦期)</h3>
@@ -91,10 +105,12 @@
                                         <option value="非洲地區">非洲地區</option>
                                     </optgroup>
                                     <optgroup label="核心國家">
-                                        <option value="日本">日本 (Japan)</option>
+                                        <option value="日本" selected>日本 (Japan)</option>
                                         <option value="韓國">韓國 (Korea)</option>
-                                        <option value="美國">美國 (USA)</option>
                                         <option value="香港">香港 (HK)</option>
+                                        <option value="澳門">澳門 (Macao)</option>
+                                        <option value="美國">美國 (USA)</option>
+                                        <option value="中國大陸">中國大陸 (Mainland China)</option>
                                         <option value="新加坡">新加坡 (Singapore)</option>
                                         <option value="馬來西亞">馬來西亞 (Malaysia)</option>
                                         <option value="泰國">泰國 (Thailand)</option>
@@ -108,8 +124,23 @@
                             <canvas id="recoveryChart"></canvas>
                         </div>
                         <div class="market-insight-bar glass">
-                            <div class="insight-label">💡 <span id="insight-target-name">全體來臺</span> 市場動態：</div>
+                            <div class="insight-label">💡 <span id="insight-target-name">日本</span> 市場動態：</div>
                             <div class="insight-content" id="seasonal-insight">分析數據中...</div>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Table (参考圖二) -->
+                    <div class="chart-panel wide glass">
+                        <div class="panel-header">
+                            <div class="title-group">
+                                <h2 id="table-title">歷年成長率 | 訪客入台趨勢</h2>
+                                <p>月度同比數據與成長幅度分析</p>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="growth-table" id="comparisonTable">
+                                <!-- Dynamic table -->
+                            </table>
                         </div>
                     </div>
 
@@ -138,6 +169,22 @@
 
                 <!-- View 2: Continents -->
                 <section id="continents" class="dashboard-view hidden">
+                    <!-- Continent Micro-KPIs -->
+                    <div class="kpi-micro-row">
+                        <div class="micro-card glass">
+                            <span class="m-label">復甦領頭羊</span>
+                            <span class="m-value" id="continent-hero-recovery">--</span>
+                        </div>
+                        <div class="micro-card glass">
+                            <span class="m-label">成長動能最強</span>
+                            <span class="m-value" id="continent-hero-momentum">--</span>
+                        </div>
+                        <div class="micro-card glass">
+                            <span class="m-label">最大流量貢獻</span>
+                            <span class="m-value" id="continent-hero-volume">--</span>
+                        </div>
+                    </div>
+
                     <div class="grid-2-col">
                         <div class="chart-panel glass">
                             <div class="panel-header">
@@ -158,6 +205,11 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="market-insight-bar glass">
+                        <div class="insight-label">🗺️ 板塊趨勢洞察：</div>
+                        <div class="insight-content" id="continent-insight">正在分析全球各板塊復甦脈絡...</div>
+                    </div>
                 </section>
 
                 <!-- View 3: Countries -->
@@ -169,9 +221,14 @@
                             <div class="controls">
                                 <select id="yearSelect">
                                     <option value="all">所有年份加總</option>
-                                    <option value="2019">2019 (疫情前)</option>
+                                    <option value="2019">2019 (疫情前基準)</option>
+                                    <option value="2020">2020 (封關初期)</option>
+                                    <option value="2021">2021 (低谷期)</option>
+                                    <option value="2022">2022 (復甦醞釀)</option>
                                     <option value="2023">2023 (復甦初期)</option>
                                     <option value="2024">2024 (穩定復甦)</option>
+                                    <option value="2025">2025 (近期高峰)</option>
+                                    <option value="2026">2026 (當前年度)</option>
                                 </select>
                             </div>
                         </div>

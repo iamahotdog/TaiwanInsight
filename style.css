@@ -216,10 +216,10 @@ body {
 /* Main Content */
 .main-content {
     flex-grow: 1;
-    padding: 2rem 3rem;
+    padding: 5rem 3rem 3rem; /* Further increased top padding (from 3.5rem to 5rem) to ensure clearance */
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 2.5rem;
     overflow-y: auto;
     max-height: 100vh;
 }
@@ -525,4 +525,210 @@ body {
 
 .glow-orb {
     animation: pulseGlow 4s infinite ease-in-out;
+}
+
+/* --- V4 Professional Expansion Styles (Refined) --- */
+
+/* Summary Hero Block - Refined to match original dark-neon style */
+.summary-hero {
+    padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.05), rgba(15, 18, 32, 0.8));
+    border: 1px solid var(--glass-border);
+    border-left: 4px solid var(--primary-neon);
+    margin-top: 1rem; /* Added margin-top for extra safety against clipping */
+    margin-bottom: 2rem;
+    gap: 3rem;
+    position: relative;
+    /* Removed overflow: hidden to prevent internal clipping of large numbers */
+}
+
+.summary-hero::after {
+    content: '';
+    position: absolute;
+    right: -20px;
+    top: -20px;
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle, rgba(0, 242, 254, 0.05) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.hero-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.hero-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--primary-neon);
+    margin-bottom: 0.2rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+}
+
+.hero-title span {
+    font-weight: 400;
+    font-size: 0.8rem;
+    margin-left: 10px;
+    color: var(--text-muted);
+}
+
+.hero-main-value {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+}
+
+.hero-right {
+    width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    padding-left: 2rem;
+}
+
+.hero-right-header {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.top-ranking-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.ranking-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.ranking-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.ranking-name { color: var(--text-main); }
+.ranking-value { color: var(--secondary-neon); }
+
+.ranking-bar-bg {
+    height: 3px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+}
+
+.ranking-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-neon), var(--secondary-neon));
+    border-radius: 2px;
+    transition: width 1.5s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+/* Growth Table - Compacted for better UX */
+.table-container {
+    overflow-x: auto;
+    margin-top: 0.5rem;
+    max-height: 400px; /* Prevent it from being too long */
+    overflow-y: auto;
+}
+
+.growth-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.85rem;
+}
+
+.growth-table th, .growth-table td {
+    padding: 0.8rem 0.6rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.growth-table th {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: sticky;
+    top: 0;
+    background: #0f1220;
+    z-index: 1;
+}
+
+.growth-table td:first-child, .growth-table th:first-child {
+    text-align: left;
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+.growth-table tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.growth-indicator {
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    font-size: 0.8rem;
+}
+
+.indicator-up { color: #ff4757; } /* Subtle red */
+.indicator-down { color: #2ed573; } /* Subtle green */
+
+/* Micro cards for Continents */
+.kpi-micro-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.micro-card {
+    padding: 0.8rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.m-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.m-value {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--primary-neon);
+}
+
+/* Fix spacing between sections to avoid overlap */
+.view-container > section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.chart-panel {
+    margin-bottom: 0; /* Handled by container gap */
 }

@@ -156,7 +156,26 @@ function updateHeroSummary() {
 
     animateValue('hero-total-visitors', 0, total2026, 2000);
     const dateRangeElem = document.getElementById('hero-date-range');
-    if (dateRangeElem) dateRangeElem.innerText = '2026年1月1日至今';
+    if (dateRangeElem) dateRangeElem.innerText = `2026年1月至${latestMonth}月 (最新月份)`;
+
+    let ytd19 = 0;
+    let ytd25 = 0;
+    data.forEach(row => {
+        const y = row['年別'] + 1911;
+        const m = row['月份'];
+        if (m <= latestMonth) {
+            if (y === 2019) ytd19 += row['小計'] || 0;
+            if (y === 2025) ytd25 += row['小計'] || 0;
+        }
+    });
+
+    const globalRec = (total2026 / (ytd19 || 1) * 100).toFixed(1);
+    const globalMom = ((total2026 - ytd25) / (ytd25 || 1) * 100).toFixed(1);
+    const insightElem = document.getElementById('hero-insight-text');
+    if (insightElem) {
+        let direction = globalMom >= 0 ? "成長" : "衰退";
+        insightElem.innerHTML = `🌟 整體復甦達 2019 年同期的 <span>${globalRec}%</span>，較去年同期${direction} <span>${Math.abs(globalMom)}%</span>。`;
+    }
 
     const detailed = state.detailedData;
     const countryAgg = {};
@@ -277,7 +296,7 @@ function renderMonthlyComparisonChart() {
     const yearColors = [CHART_COLORS.americas, '#4facfe', CHART_COLORS.asia, '#ff4757'];
     
     const datasets = years.map((y, i) => {
-        const monthly = Array(12).fill(0);
+        const monthly = Array(12).fill(null);
         data.forEach(row => { if (row['年別'] + 1911 === y) monthly[row['月份']-1] = row['小計']; });
         return { label: `${y}年`, data: monthly, borderColor: yearColors[i], borderWidth: 2, tension: 0.3, pointRadius: 3, fill: false };
     });

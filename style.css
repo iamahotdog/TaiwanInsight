@@ -354,6 +354,11 @@ select {
     cursor: pointer;
 }
 
+select option, select optgroup {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+}
+
 /* Market Insight Bar */
 .market-insight-bar {
     margin-top: 1.5rem;
@@ -459,6 +464,23 @@ select {
     line-height: 1.1;
     font-variant-numeric: tabular-nums;
     text-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+}
+
+.hero-insight {
+    margin-top: 0.8rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border-left: 2px solid var(--accent-coral);
+    display: inline-block;
+    max-width: fit-content;
+}
+
+.hero-insight span {
+    color: var(--text-main);
+    font-weight: bold;
 }
 
 .hero-right {

@@ -2,7 +2,8 @@
 let state = {
     overviewData: null,
     detailedData: null,
-    charts: {} 
+    charts: {},
+    currentMetric: '小計' // Default metric for table and charts
 };
 
 const CHART_COLORS = {
@@ -12,27 +13,29 @@ const CHART_COLORS = {
     oceania: '#fbc2eb',
     africa: '#e0c3fc',
     mainline: '#4facfe',
+    baseline: 'rgba(255, 255, 255, 0.4)',
     grid: 'rgba(255,255,255,0.05)',
     text: '#94a3b8',
     compare: 'rgba(255, 255, 255, 0.1)'
 };
+
+const DETAILED_LIST = ['日本', '韓國', '美國', '香港', '新加坡', '馬來西亞', '泰國', '越南', '菲律賓', '中國大陸', '澳門'];
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     
     if (typeof TOURISM_DATA !== 'undefined') {
-        // Data Normalization with robustness for encoding issues
         const clean = (d) => {
             if (!Array.isArray(d)) return [];
             return d.filter(row => row && (row['年別'] || row['\ufeff年別'])).map(row => {
                 const r = {};
                 Object.keys(row).forEach(k => {
-                    const cleanKey = k.trim().replace(/^\ufeff/, ''); // Remove BOM or spaces
+                    const cleanKey = k.trim().replace(/^\ufeff/, '');
                     let val = row[k];
                     if (cleanKey !== '年別' && cleanKey !== '月份') {
                         val = parseInt(String(val).replace(/,/g, '')) || 0;
-                    } else if (cleanKey === '年別' || cleanKey === '月份') {
+                    } else {
                         val = parseInt(val) || 0;
                     }
                     r[cleanKey] = val;
@@ -45,10 +48,9 @@ document.addEventListener('DOMContentLoaded', () => {
         state.detailedData = clean(TOURISM_DATA.detailedData);
 
         hideLoader();
+        updateHeroSummary();
         updateKPIs(true);
         renderCharts();
-    } else {
-        console.error("❌ TOURISM_DATA is not defined. Please check data.js.");
     }
 });
 
@@ -65,16 +67,22 @@ function initNavigation() {
                 if (v.id === targetId) v.classList.remove('hidden');
                 else v.classList.add('hidden');
             });
+            // Re-render charts when switching view to ensure canvas size is correct
+            if (targetId === 'continents') renderContinentsChart();
+            if (targetId === 'overview') renderMonthlyComparisonChart();
         });
     });
 
     const trendSelect = document.getElementById('trendSelect');
     if (trendSelect) {
         trendSelect.addEventListener('change', (e) => {
+            state.currentMetric = e.target.value;
             const text = e.target.options[e.target.selectedIndex].text;
             const insightTarget = document.getElementById('insight-target-name');
             if (insightTarget) insightTarget.innerText = text.split(' ')[0];
-            renderRecoveryChart(e.target.value);
+            
+            renderRecoveryChart(state.currentMetric);
+            renderComparisonTable(state.currentMetric);
         });
     }
 
@@ -96,6 +104,141 @@ function hideLoader() {
 
 Chart.defaults.color = CHART_COLORS.text;
 Chart.defaults.font.family = "'Inter', 'Noto Sans TC', sans-serif";
+
+// --- V4 Summary Expansion Logic ---
+
+function updateHeroSummary() {
+    const data = state.overviewData;
+    const currentYear = 2026;
+    let total2026 = 0;
+    let latestMonth = 0;
+
+    data.forEach(row => {
+        if (row['年別'] + 1911 === currentYear) {
+            total2026 += row['小計'];
+            if (row['月份'] > latestMonth) latestMonth = row['月份'];
+        }
+    });
+
+    // Populate Big Number
+    animateValue('hero-total-visitors', 0, total2026, 2000);
+    const dateRangeElem = document.getElementById('hero-date-range');
+    if (dateRangeElem) dateRangeElem.innerText = `2026年1月1日 - ${latestMonth}月底`;
+
+    // Populate Top 5 Rankings (參考圖一)
+    const detailed = state.detailedData;
+    const countryAgg = {};
+    DETAILED_LIST.forEach(c => countryAgg[c] = 0);
+
+    detailed.forEach(row => {
+        if (row['年別'] + 1911 === currentYear) {
+            DETAILED_LIST.forEach(c => {
+                countryAgg[c] += (row[c] || 0);
+            });
+        }
+    });
+
+    const sorted = Object.entries(countryAgg).sort((a,b) => b[1] - a[1]).slice(0, 5);
+    const maxVal = sorted[0][1];
+    const topListElem = document.getElementById('hero-top-countries');
+    if (!topListElem) return;
+
+    topListElem.innerHTML = sorted.map((item, idx) => `
+        <div class="ranking-item">
+            <div class="ranking-info">
+                <span class="ranking-name">${idx+1}. ${item[0]}</span>
+                <span class="ranking-value">${item[1].toLocaleString()}</span>
+            </div>
+            <div class="ranking-bar-bg">
+                <div class="ranking-bar-fill" style="width: ${(item[1]/maxVal * 100).toFixed(1)}%"></div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// --- Growth Table Logic (參考圖二) ---
+
+function renderComparisonTable(metricKey) {
+    const data = DETAILED_LIST.includes(metricKey) ? state.detailedData : state.overviewData;
+    const tableTitle = document.getElementById('table-title');
+    if (tableTitle) tableTitle.innerText = `歷年成長率 | ${metricKey} 訪客數據`;
+
+    const tableElem = document.getElementById('comparisonTable');
+    if (!tableElem) return;
+
+    // Structure: { Month: { 2024: val, 2025: val, 2026: val } }
+    const matrix = Array.from({length: 12}, (_, i) => ({ month: i + 1, 2024: 0, 2025: 0, 2026: 0 }));
+    
+    data.forEach(row => {
+        const y = row['年別'] + 1911;
+        const m = row['月份'];
+        if ([2024, 2025, 2026].includes(y) && m >= 1 && m <= 12) {
+            matrix[m-1][y] = row[metricKey] || 0;
+        }
+    });
+
+    let html = `
+        <thead>
+            <tr>
+                <th>月份</th>
+                <th>2024年</th>
+                <th>2025年</th>
+                <th>2026年</th>
+                <th>成長率 (YoY)</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+
+    matrix.forEach(row => {
+        const val25 = row[2025];
+        const val26 = row[2026];
+        let growthHtml = '<span style="color:var(--text-muted)">--</span>';
+        
+        if (val26 > 0 && val25 > 0) {
+            const growth = ((val26 - val25) / val25 * 100).toFixed(1);
+            const isUp = growth >= 0;
+            growthHtml = `
+                <div class="growth-indicator ${isUp ? 'indicator-up' : 'indicator-down'}">
+                    ${isUp ? '↑' : '↓'} ${Math.abs(growth)}%
+                </div>
+            `;
+        }
+
+        html += `
+            <tr>
+                <td>${row.month}月</td>
+                <td>${row[2024] > 0 ? row[2024].toLocaleString() : '-'}</td>
+                <td>${row[2025] > 0 ? row[2025].toLocaleString() : '-'}</td>
+                <td>${row[2026] > 0 ? row[2026].toLocaleString() : '-'}</td>
+                <td>${growthHtml}</td>
+            </tr>
+        `;
+    });
+
+    // Add Year Summary row (accumulated for Feb)
+    const m12_25 = matrix[0][2025] + matrix[1][2025];
+    const m12_26 = matrix[0][2026] + matrix[1][2026];
+    const yoy = (((m12_26 - m12_25) / m12_25) * 100).toFixed(1);
+
+    html += `
+        <tr style="background: rgba(212, 175, 55, 0.1); border-top: 2px solid #d4af37">
+            <td>1月-2月累計</td>
+            <td>${(matrix[0][2024] + matrix[1][2024]).toLocaleString()}</td>
+            <td>${m12_25.toLocaleString()}</td>
+            <td>${m12_26.toLocaleString()}</td>
+            <td>
+                <div class="growth-indicator ${yoy >= 0 ? 'indicator-up' : 'indicator-down'}">
+                    ${yoy >= 0 ? '↑' : '↓'} ${Math.abs(yoy)}%
+                </div>
+            </td>
+        </tr>
+    </tbody>`;
+
+    tableElem.innerHTML = html;
+}
+
+// --- Animation & Core KPI Handlers ---
 
 function animateValue(id, start, end, duration) {
     const obj = document.getElementById(id);
@@ -155,10 +298,10 @@ function updateKPIs(animate = false) {
     if (topMarketElem) topMarketElem.innerText = "港澳 / 日本"; 
 }
 
+// --- Seasonal Engine ---
+
 function updateSeasonalInsight(metricKey) {
-    const detailedList = ['日本', '韓國', '美國', '香港', '新加坡', '馬來西亞', '泰國', '越南', '菲律賓', '中國大陸', '澳門'];
-    const data = detailedList.includes(metricKey) ? state.detailedData : state.overviewData;
-    
+    const data = DETAILED_LIST.includes(metricKey) ? state.detailedData : state.overviewData;
     if (!data || data.length === 0) return;
 
     const monthlySums = Array(12).fill(0);
@@ -190,62 +333,78 @@ function updateSeasonalInsight(metricKey) {
     insightBox.innerHTML = text;
 }
 
-function renderCharts() {
-    const renderFns = [
-        () => renderRecoveryChart('小計'),
-        () => renderContinentsChart(),
-        () => renderCountriesChart(state.detailedData, 'all'),
-        () => renderMonthlyComparisonChart(),
-        () => renderResidencePieChart()
-    ];
+// --- Charts Engine ---
 
-    renderFns.forEach(fn => {
-        try { fn(); } catch (e) { console.error("Chart Render Fail:", e); }
-    });
+function renderCharts() {
+    renderRecoveryChart(state.currentMetric);
+    renderComparisonTable(state.currentMetric);
+    renderContinentsChart();
+    renderCountriesChart(state.detailedData, 'all');
+    renderMonthlyComparisonChart();
+    renderResidencePieChart();
 }
 
 function renderRecoveryChart(metricKey) {
-    const detailedList = ['日本', '韓國', '美國', '香港', '新加坡', '馬來西亞', '泰國', '越南', '菲律賓', '中國大陸', '澳門'];
-    const data = detailedList.includes(metricKey) ? state.detailedData : state.overviewData;
+    const data = DETAILED_LIST.includes(metricKey) ? state.detailedData : state.overviewData;
     
     const yearlyData = {};
+    const base2019Line = Array(8).fill(null); // 2019-2026
+
+    // Baseline 2019 calculation
+    let total2019 = 0;
     data.forEach(row => {
         const year = row['年別'] + 1911;
         if (!yearlyData[year]) yearlyData[year] = 0;
         yearlyData[year] += (row[metricKey] || 0);
+        if (year === 2019) total2019 += (row[metricKey] || 0);
     });
 
-    const labels = Object.keys(yearlyData).sort();
-    const values = labels.map(l => yearlyData[l]);
+    const labels = [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
+    const values = labels.map(l => yearlyData[l] || 0);
+    const baselineData = Array(8).fill(total2019);
 
     const ctx = document.getElementById('recoveryChart')?.getContext('2d');
     if (!ctx) return;
     if (state.charts['recoveryChart']) state.charts['recoveryChart'].destroy();
 
-    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(0, 242, 254, 0.4)');
-    gradient.addColorStop(1, 'rgba(0, 242, 254, 0)');
-
     state.charts['recoveryChart'] = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
-            datasets: [{
-                label: `${metricKey} 人次`,
-                data: values,
-                borderColor: CHART_COLORS.asia,
-                backgroundColor: gradient,
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 4,
-                pointHoverRadius: 8
-            }]
+            datasets: [
+                {
+                    label: `2019 基準`,
+                    data: baselineData,
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderDash: [5, 5],
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    fill: false
+                },
+                {
+                    label: `${metricKey} 人次`,
+                    data: values,
+                    borderColor: CHART_COLORS.asia,
+                    backgroundColor: 'rgba(0, 242, 254, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 8
+                }
+            ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.toLocaleString()}`
+                    }
+                }
+            },
             scales: {
                 y: { grid: { color: CHART_COLORS.grid }, ticks: { callback: v => (v / 10000).toFixed(0) + ' 萬' } },
                 x: { grid: { display: false } }
@@ -257,23 +416,31 @@ function renderRecoveryChart(metricKey) {
 
 function renderContinentsChart() {
     const data = state.overviewData;
-    let y2019 = { '亞洲地區': 0, '美洲地區': 0, '歐洲地區': 0, '大洋洲地區': 0, '非洲地區': 0 };
-    let y2024 = { '亞洲地區': 0, '美洲地區': 0, '歐洲地區': 0, '大洋洲地區': 0, '非洲地區': 0 };
-    let y2025 = { '亞洲地區': 0, '美洲地區': 0, '歐洲地區': 0, '大洋洲地區': 0, '非洲地區': 0 };
+    const keys = ['亞洲地區', '美洲地區', '歐洲地區', '大洋洲地區', '非洲地區'];
+    const years = [2019, 2024, 2025];
+    const yearlyMap = { 2019: {}, 2024: {}, 2025: {} };
     
+    keys.forEach(k => { yearlyMap[2019][k] = 0; yearlyMap[2024][k] = 0; yearlyMap[2025][k] = 0; });
+
     data.forEach(row => {
         const y = row['年別'] + 1911;
-        const target = (y === 2019) ? y2019 : (y === 2024 ? y2024 : (y === 2025 ? y2025 : null));
-        if (target) {
-            Object.keys(target).forEach(continent => {
-                target[continent] += (row[continent] || 0);
-            });
+        if (yearlyMap[y]) {
+            keys.forEach(k => yearlyMap[y][k] += (row[k] || 0));
         }
     });
 
     const labels = ['亞洲', '美洲', '歐洲', '大洋洲', '非洲'];
-    const keys = ['亞洲地區', '美洲地區', '歐洲地區', '大洋洲地區', '非洲地區'];
-    const recoveryRates = keys.map(k => y2019[k] > 0 ? (y2025[k] / y2019[k] * 100).toFixed(1) : 0);
+    const recoveryRates = keys.map(k => (yearlyMap[2025][k] / (yearlyMap[2019][k] || 1) * 100).toFixed(1));
+    const momentum = keys.map(k => ((yearlyMap[2025][k] - yearlyMap[2024][k]) / (yearlyMap[2024][k] || 1) * 100).toFixed(1));
+
+    // Update Hero Cells
+    const maxRecIdx = recoveryRates.indexOf(String(Math.max(...recoveryRates)));
+    const maxMomIdx = momentum.indexOf(String(Math.max(...momentum)));
+    const maxVolIdx = keys.indexOf(keys.reduce((a, b) => yearlyMap[2025][a] > yearlyMap[2025][b] ? a : b));
+
+    document.getElementById('continent-hero-recovery').innerText = `${labels[maxRecIdx]} (${recoveryRates[maxRecIdx]}%)`;
+    document.getElementById('continent-hero-momentum').innerText = `${labels[maxMomIdx]} (+${momentum[maxMomIdx]}%)`;
+    document.getElementById('continent-hero-volume').innerText = `${labels[maxVolIdx]}`;
 
     const ctxRadar = document.getElementById('continentRadarChart')?.getContext('2d');
     if (ctxRadar) {
@@ -290,13 +457,7 @@ function renderContinentsChart() {
                     pointBackgroundColor: CHART_COLORS.asia
                 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    r: { angleLines: { color: CHART_COLORS.grid }, grid: { color: CHART_COLORS.grid }, ticks: { display: false }, suggestedMin: 0, suggestedMax: 120 }
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false, scales: { r: { angleLines: { color: CHART_COLORS.grid }, grid: { color: CHART_COLORS.grid }, ticks: { display: false }, suggestedMin: 0, suggestedMax: 120 } } }
         });
     }
 
@@ -308,24 +469,31 @@ function renderContinentsChart() {
             data: {
                 labels: labels,
                 datasets: [
-                    { label: '2024', data: keys.map(k => y2024[k]), backgroundColor: CHART_COLORS.compare, borderRadius: 4 },
-                    { label: '2025', data: keys.map(k => y2025[k]), backgroundColor: CHART_COLORS.mainline, borderRadius: 4 }
+                    { label: '2024 人次', data: keys.map(k => yearlyMap[2024][k]), backgroundColor: CHART_COLORS.compare, borderRadius: 4 },
+                    { label: '2025 人次', data: keys.map(k => yearlyMap[2025][k]), backgroundColor: CHART_COLORS.mainline, borderRadius: 4 }
                 ]
             },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: CHART_COLORS.grid }, ticks: { callback: v => (v/10000).toFixed(0) + 'w' } } } }
         });
     }
+
+    // Continent Insight Narrative
+    const insightElem = document.getElementById('continent-insight');
+    let story = `當前全球復甦以 <span class="season-badge">${labels[maxRecIdx]}</span> 最為顯著，`;
+    if (parseFloat(recoveryRates[maxRecIdx]) > 100) story += `已超越 2019 基準。`;
+    else story += `正逐步逼近疫情前水準。`;
+    story += ` 增長動能則由 <span class="season-badge">${labels[maxMomIdx]}</span> 領銜，表現令人矚目。`;
+    insightElem.innerHTML = story;
 }
 
 function renderCountriesChart(data, targetYear) {
-    const countries = ['日本', '韓國', '香港', '美國', '新加坡', '馬來西亞', '泰國', '越南', '菲律賓', '中國大陸', '澳門'];
     const countryData = {};
-    countries.forEach(c => countryData[c] = 0);
+    DETAILED_LIST.forEach(c => countryData[c] = 0);
 
     data.forEach(row => {
         const y = row['年別'] + 1911;
         if (targetYear === 'all' || targetYear == y) {
-            countries.forEach(c => countryData[c] += (row[c] || 0));
+            DETAILED_LIST.forEach(c => countryData[c] += (row[c] || 0));
         }
     });
 
@@ -344,7 +512,7 @@ function renderCountriesChart(data, targetYear) {
             datasets: [{
                 label: '觀光客人數',
                 data: values,
-                backgroundColor: ['#00f2fe', '#4facfe', '#a18cd1', '#fbc2eb', '#fe5f75', '#ff9a9e', '#fecfef', '#e0c3fc', '#8fd3f4', '#f8f9fa'],
+                backgroundColor: ['#d4af37', '#ffd700', '#f1c40f', '#00f2fe', '#4facfe', '#a18cd1', '#fbc2eb', '#fe5f75', '#ff9a9e', '#fecfef'],
                 borderRadius: 8
             }]
         },
@@ -398,16 +566,15 @@ function renderResidencePieChart() {
     const titleElem = document.getElementById('pie-chart-title');
     if (titleElem) titleElem.innerText = `${latestYear}年${latestMonth}月 客源分佈`;
 
-    const countries = ['日本', '韓國', '香港', '澳門', '越南', '泰國', '馬來西亞', '新加坡', '菲律賓', '美國', '中國大陸'];
     const countryData = {};
-    countries.forEach(c => countryData[c] = 0);
+    DETAILED_LIST.forEach(c => countryData[c] = 0);
     let otherTotal = 0, total = 0;
 
     data.forEach(row => {
         const y = row['年別'] + 1911, m = row['月份'];
         if (y === latestYear && m === latestMonth) {
             let rowSum = 0;
-            countries.forEach(c => { const val = row[c] || 0; countryData[c] += val; rowSum += val; });
+            DETAILED_LIST.forEach(c => { const val = row[c] || 0; countryData[c] += val; rowSum += val; });
             const subTotal = row['小計'] || 0;
             otherTotal += (subTotal - rowSum);
             total += subTotal;

@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>臺灣觀光：從疫情到復甦 (2019-2026)</title>
+    <title>臺灣觀光戰情室：專業數據分析 (2019-2026)</title>
     <!-- Fonts -->
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Noto+Sans+TC:wght@300;400;500;700&display=swap"
@@ -50,7 +50,7 @@
         <main class="main-content">
             <section class="summary-hero glass">
                 <div class="hero-left">
-                    <div class="hero-title">來臺旅客統計 <span id="hero-date-range">2026年1月1日至今</span></div>
+                    <div class="hero-title">來臺旅客基準統計 <span id="hero-date-range">2026年1月1日至今</span></div>
                     <div class="hero-main-value" id="hero-total-visitors">0</div>
                 </div>
                 <div class="hero-right">
@@ -61,15 +61,15 @@
                 </div>
             </section>
 
-            <!-- Header KPIs (Modified to be more compact) -->
+            <!-- Header KPIs (Global Context) -->
             <header class="kpi-header">
                 <div class="kpi-card glass">
-                    <h3 class="kpi-label">2025年 來臺總人數 (穩定復甦期)</h3>
+                    <h3 class="kpi-label">2025年 全年人次</h3>
                     <h2 class="kpi-value" id="kpi-current-year">Loading...</h2>
                     <div class="kpi-trend positive" id="kpi-trend-current">--</div>
                 </div>
                 <div class="kpi-card glass">
-                    <h3 class="kpi-label">核心市場貢獻度 (2025)</h3>
+                    <h3 class="kpi-label">主要客源貢獻 (2025)</h3>
                     <h2 class="kpi-value" id="kpi-top-market">Loading...</h2>
                 </div>
                 <div class="kpi-card glass">
@@ -88,7 +88,7 @@
                         <div class="panel-header">
                             <div class="title-group">
                                 <h2>觀光復甦曲線 (2019-2026)</h2>
-                                <p>觀察選定目標在後疫情時代的回流軌跡</p>
+                                <p>監測目標市場相對於 2019 疫情前之恢復水準</p>
                             </div>
                             <div class="controls">
                                 <label for="trendSelect">分析對象：</label>
@@ -119,21 +119,37 @@
                                 </select>
                             </div>
                         </div>
+
+                        <!-- V5 Market Scorecard (Professional Analytics) -->
+                        <div class="market-scorecard">
+                            <div class="score-card">
+                                <span class="score-label">當前累計 (2026 YTD)</span>
+                                <span class="score-value" id="score-volume">--</span>
+                            </div>
+                            <div class="score-card highlight">
+                                <span class="score-label">復甦進度 (vs 2019)</span>
+                                <span class="score-value" id="score-recovery">--%</span>
+                            </div>
+                            <div class="score-card">
+                                <span class="score-label">同比增長 (vs 2025)</span>
+                                <span class="score-value" id="score-momentum">--%</span>
+                            </div>
+                        </div>
+
                         <div class="chart-wrapper">
                             <canvas id="recoveryChart"></canvas>
                         </div>
                         <div class="market-insight-bar glass">
-                            <div class="insight-label">💡 <span id="insight-target-name">日本</span> 市場動態：</div>
-                            <div class="insight-content" id="seasonal-insight">分析數據中...</div>
+                            <div class="insight-label">📈 <span id="insight-target-name">日本</span> 市場深度解析：</div>
+                            <div class="insight-content" id="seasonal-insight">數據模型計算中...</div>
                         </div>
                     </div>
 
-                    <!-- Comparison Table (参考圖二) -->
                     <div class="chart-panel wide glass">
                         <div class="panel-header">
                             <div class="title-group">
-                                <h2 id="table-title">歷年成長率 | 訪客入台趨勢</h2>
-                                <p>月度同比數據與成長幅度分析</p>
+                                <h2 id="table-title">歷年月份成長對比</h2>
+                                <p>精確監測每月份的同比 (YoY) 增長率</p>
                             </div>
                         </div>
                         <div class="table-container">
@@ -143,12 +159,11 @@
                         </div>
                     </div>
 
-                    <!-- New Grid for Monthly & Pie Charts -->
                     <div class="grid-2-col">
                         <div class="chart-panel glass">
                             <div class="panel-header">
-                                <h2>歷年月份對比趨勢</h2>
-                                <p>對比不同年度同月份的增長表現</p>
+                                <h2>季節性走勢對比</h2>
+                                <p>對比不同年度同月份的入境規模</p>
                             </div>
                             <div class="chart-wrapper">
                                 <canvas id="monthlyComparisonChart"></canvas>
@@ -156,8 +171,8 @@
                         </div>
                         <div class="chart-panel glass">
                             <div class="panel-header">
-                                <h2 id="pie-chart-title">最新客源地分佈</h2>
-                                <p>各國旅客佔比分析</p>
+                                <h2 id="pie-chart-title">最新客源結構</h2>
+                                <p>當前月份旅客人數佔比分析</p>
                             </div>
                             <div class="chart-wrapper">
                                 <canvas id="residencePieChart"></canvas>
@@ -168,18 +183,17 @@
 
                 <!-- View 2: Continents -->
                 <section id="continents" class="dashboard-view hidden">
-                    <!-- Continent Micro-KPIs -->
                     <div class="kpi-micro-row">
                         <div class="micro-card glass">
-                            <span class="m-label">復甦領頭羊</span>
+                            <span class="m-label">復甦效率最優</span>
                             <span class="m-value" id="continent-hero-recovery">--</span>
                         </div>
                         <div class="micro-card glass">
-                            <span class="m-label">成長動能最強</span>
+                            <span class="m-label">成長動能力最強</span>
                             <span class="m-value" id="continent-hero-momentum">--</span>
                         </div>
                         <div class="micro-card glass">
-                            <span class="m-label">最大流量貢獻</span>
+                            <span class="m-label">主要流量來源</span>
                             <span class="m-value" id="continent-hero-volume">--</span>
                         </div>
                     </div>
@@ -187,8 +201,8 @@
                     <div class="grid-2-col">
                         <div class="chart-panel glass">
                             <div class="panel-header">
-                                <h2>市場復甦深度 (2025 vs 2019)</h2>
-                                <p>對比各大洲回流至疫情前水準的百分比</p>
+                                <h2>板塊復甦深度 (2025 vs 2019)</h2>
+                                <p>大洲回流程度對比百分比</p>
                             </div>
                             <div class="chart-wrapper">
                                 <canvas id="continentRadarChart"></canvas>
@@ -196,18 +210,13 @@
                         </div>
                         <div class="chart-panel glass">
                             <div class="panel-header">
-                                <h2>復甦動能對比</h2>
-                                <p>各大洲近兩年 (2024-2025) 的增長態勢</p>
+                                <h2>區域成長動能</h2>
+                                <p>各板塊近年度增長態勢</p>
                             </div>
                             <div class="chart-wrapper">
                                 <canvas id="continentBarChart"></canvas>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="market-insight-bar glass">
-                        <div class="insight-label">🗺️ 板塊趨勢洞察：</div>
-                        <div class="insight-content" id="continent-insight">正在分析全球各板塊復甦脈絡...</div>
                     </div>
                 </section>
 
@@ -216,16 +225,16 @@
                     <div class="chart-panel wide glass">
                         <div class="panel-header">
                             <h2>核心市場排行榜 (主要國家)</h2>
-                            <p>排名前段班國家的年度觀光客總量變化</p>
+                            <p>篩選年度內各國旅客量排名變化</p>
                             <div class="controls">
                                 <select id="yearSelect">
-                                    <option value="all">所有年份加總</option>
-                                    <option value="2019">2019 (疫情前基準)</option>
-                                    <option value="2020">2020 (封關初期)</option>
-                                    <option value="2021">2021 (低谷期)</option>
-                                    <option value="2022">2022 (復甦醞釀)</option>
-                                    <option value="2023">2023 (復甦初期)</option>
-                                    <option value="2024">2024 (穩定復甦)</option>
+                                    <option value="all">累計總額 (歷年)</option>
+                                    <option value="2019">2019 (基準年度)</option>
+                                    <option value="2020">2020</option>
+                                    <option value="2021">2021</option>
+                                    <option value="2022">2022</option>
+                                    <option value="2023">2023</option>
+                                    <option value="2024">2024</option>
                                     <option value="2025">2025 (近期高峰)</option>
                                     <option value="2026">2026 (當前年度)</option>
                                 </select>
@@ -241,10 +250,9 @@
         </main>
     </div>
 
-    <!-- Loading Overlay -->
     <div id="loader" class="loader-overlay">
         <div class="spinner"></div>
-        <p>載入並解析觀光數據中...</p>
+        <p>專業數據運算中...</p>
     </div>
 
     <script src="script.js"></script>

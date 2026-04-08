@@ -215,7 +215,7 @@ body {
 /* Main Content */
 .main-content {
     flex-grow: 1;
-    padding: 5rem 3rem 3rem; /* Further increased top padding (from 3.5rem to 5rem) to ensure clearance */
+    padding: 5rem 3rem 3rem; 
     display: flex;
     flex-direction: column;
     gap: 2.5rem;
@@ -357,12 +357,13 @@ select {
 /* Market Insight Bar */
 .market-insight-bar {
     margin-top: 1.5rem;
-    padding: 1rem 1.5rem;
+    padding: 1.2rem 1.8rem;
     display: flex;
     align-items: center;
     gap: 1rem;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     border-left: 3px solid var(--primary-neon);
+    background: rgba(0, 242, 254, 0.02);
 }
 
 .insight-label {
@@ -371,52 +372,47 @@ select {
     white-space: nowrap;
 }
 
-.insight-content {
-    color: var(--text-main);
+/* Professional Analytics Scorecard (V5) */
+.market-scorecard {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.2rem;
+    margin-bottom: 2rem;
 }
 
-.insight-content span {
-    background: rgba(0, 242, 254, 0.15);
-    padding: 2px 6px;
-    border-radius: 4px;
-    color: var(--primary-neon);
-    font-weight: 600;
-}
-
-/* Loader */
-.loader-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--bg-dark);
+.score-card {
+    padding: 1.2rem;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    transition: opacity 0.5s ease;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
 }
 
-.spinner {
-    width: 50px;
-    height: 50px;
-    border: 3px solid rgba(0, 242, 254, 0.1);
-    border-top: 3px solid var(--primary-neon);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 1.5rem;
+.score-card.highlight {
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.08), transparent);
+    border-color: rgba(0, 242, 254, 0.15);
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+.score-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
 }
 
-/* --- V4 Professional Expansion Styles (Refined) --- */
+.score-value {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text-main);
+    font-variant-numeric: tabular-nums;
+}
 
-/* Summary Hero Block - Refined to match original dark-neon style */
+.text-coral { color: var(--accent-coral) !important; }
+
+/* Summary Hero Block */
 .summary-hero {
     padding: 1.5rem 2rem;
     display: flex;
@@ -425,11 +421,10 @@ select {
     background: linear-gradient(135deg, rgba(0, 242, 254, 0.05), rgba(15, 18, 32, 0.8));
     border: 1px solid var(--glass-border);
     border-left: 4px solid var(--primary-neon);
-    margin-top: 1rem; /* Added margin-top for extra safety against clipping */
+    margin-top: 1rem;
     margin-bottom: 2rem;
     gap: 3rem;
     position: relative;
-    /* Removed overflow: hidden to prevent internal clipping of large numbers */
 }
 
 .summary-hero::after {
@@ -456,13 +451,6 @@ select {
     margin-bottom: 0.2rem;
     text-transform: uppercase;
     letter-spacing: 1.5px;
-}
-
-.hero-title span {
-    font-weight: 400;
-    font-size: 0.8rem;
-    margin-left: 10px;
-    color: var(--text-muted);
 }
 
 .hero-main-value {
@@ -522,14 +510,13 @@ select {
     height: 100%;
     background: linear-gradient(90deg, var(--primary-neon), var(--secondary-neon));
     border-radius: 2px;
-    transition: width 1.5s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
-/* Growth Table - Compacted for better UX */
+/* Growth Table */
 .table-container {
     overflow-x: auto;
     margin-top: 0.5rem;
-    max-height: 400px; /* Prevent it from being too long */
+    max-height: 400px; 
     overflow-y: auto;
 }
 
@@ -577,8 +564,8 @@ select {
     font-size: 0.8rem;
 }
 
-.indicator-up { color: #fe5f75; } /* Accent Coral Red */
-.indicator-down { color: #2ed573; } /* Subtle green */
+.indicator-up { color: var(--accent-coral); }
+.indicator-down { color: #2ed573; }
 
 /* Micro cards for Continents */
 .kpi-micro-row {
@@ -617,5 +604,5 @@ select {
 }
 
 .chart-panel {
-    margin-bottom: 0; /* Handled by container gap */
+    margin-bottom: 0;
 }

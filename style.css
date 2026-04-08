@@ -1,4 +1,4 @@
-﻿:root {
+:root {
     /* Flagship Color Palette */
     --bg-dark: #070912;
     --bg-panel: rgba(15, 18, 32, 0.6);
@@ -288,7 +288,7 @@ body {
     transition: opacity 0.3s ease;
 }
 
-.hidden { display: none; }
+.hidden { display: none !important; }
 
 /* Panels */
 .grid-2-col {

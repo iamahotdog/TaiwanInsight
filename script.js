@@ -1,4 +1,4 @@
-﻿// State and Data Variables
+// State and Data Variables
 let state = {
     overviewData: null,
     detailedData: null,
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hideLoader();
         updateHeroSummary();
         updateKPIs(true);
-        updateMarketScorecard(state.currentMetric); // Initialization V5
+        updateMarketScorecard(state.currentMetric); 
         renderCharts();
     }
 });
@@ -67,8 +67,14 @@ function initNavigation() {
                 if (v.id === targetId) v.classList.remove('hidden');
                 else v.classList.add('hidden');
             });
+
+            // Logic Switches with Safety Checks
             if (targetId === 'continents') renderContinentsChart();
             if (targetId === 'overview') renderCharts();
+            if (targetId === 'countries') {
+                const yearSel = document.getElementById('yearSelect');
+                renderCountriesChart(state.detailedData, yearSel ? yearSel.value : 'all');
+            }
         });
     });
 
@@ -82,7 +88,7 @@ function initNavigation() {
             
             renderRecoveryChart(state.currentMetric);
             renderComparisonTable(state.currentMetric);
-            updateMarketScorecard(state.currentMetric); // Dynamic Update V5
+            updateMarketScorecard(state.currentMetric); 
         });
     }
 
@@ -97,7 +103,6 @@ function initNavigation() {
 function updateMarketScorecard(metricKey) {
     const data = DETAILED_LIST.includes(metricKey) ? state.detailedData : state.overviewData;
     
-    // Calculate 2026 YTD, 2019 YTD (for recovery), 2025 YTD (for growth)
     let ytd26 = 0, ytd25 = 0, ytd19 = 0;
     let latestMonth = 0;
 
@@ -110,7 +115,6 @@ function updateMarketScorecard(metricKey) {
         }
     });
 
-    // Re-sweep for 2019 and 2025 up to those same months
     data.forEach(row => {
         const y = row['年別'] + 1911;
         const m = row['月份'];
@@ -123,11 +127,16 @@ function updateMarketScorecard(metricKey) {
     const recovery = (ytd26 / (ytd19 || 1) * 100).toFixed(1);
     const momentum = ((ytd26 - ytd25) / (ytd25 || 1) * 100).toFixed(1);
 
-    document.getElementById('score-volume').innerText = ytd26.toLocaleString();
-    document.getElementById('score-recovery').innerText = recovery + '%';
+    const volElem = document.getElementById('score-volume');
+    const recElem = document.getElementById('score-recovery');
     const momElem = document.getElementById('score-momentum');
-    momElem.innerText = (momentum >= 0 ? '+' : '') + momentum + '%';
-    momElem.className = 'score-value ' + (momentum >= 0 ? '' : 'text-coral');
+
+    if (volElem) volElem.innerText = ytd26.toLocaleString();
+    if (recElem) recElem.innerText = `${recovery}%`;
+    if (momElem) {
+        momElem.innerText = `${momentum >= 0 ? '+' : ''}${momentum}%`;
+        momElem.className = `score-value ${momentum >= 0 ? '' : 'text-coral'}`;
+    }
     
     updateSeasonalInsight(metricKey, recovery); 
 }
@@ -147,7 +156,7 @@ function updateHeroSummary() {
 
     animateValue('hero-total-visitors', 0, total2026, 2000);
     const dateRangeElem = document.getElementById('hero-date-range');
-    if (dateRangeElem) dateRangeElem.innerText = 2026年1月1日至今;
+    if (dateRangeElem) dateRangeElem.innerText = '2026年1月1日至今';
 
     const detailed = state.detailedData;
     const countryAgg = {};
@@ -164,17 +173,17 @@ function updateHeroSummary() {
     const topListElem = document.getElementById('hero-top-countries');
     if (!topListElem) return;
 
-    topListElem.innerHTML = sorted.map((item, idx) => 
+    topListElem.innerHTML = sorted.map((item, idx) => `
         <div class="ranking-item">
             <div class="ranking-info">
-                <span class="ranking-name">. </span>
-                <span class="ranking-value"></span>
+                <span class="ranking-name">${idx + 1}. ${item[0]}</span>
+                <span class="ranking-value">${item[1].toLocaleString()}</span>
             </div>
             <div class="ranking-bar-bg">
-                <div class="ranking-bar-fill" style="width: %"></div>
+                <div class="ranking-bar-fill" style="width: ${(item[1] / maxVal * 100).toFixed(1)}%"></div>
             </div>
         </div>
-    ).join('');
+    `).join('');
 }
 
 function renderComparisonTable(metricKey) {
@@ -182,23 +191,38 @@ function renderComparisonTable(metricKey) {
     const tableElem = document.getElementById('comparisonTable');
     if (!tableElem) return;
 
-    const matrix = Array.from({length: 12}, (_, i) => ({ month: i + 1, 2024: 0, 2025: 0, 2026: 0 }));
+    const matrix = Array.from({length: 12}, (_, i) => ({ month: i + 1, 2019: 0, 2025: 0, 2026: 0 }));
     data.forEach(row => {
         const y = row['年別'] + 1911;
         const m = row['月份'];
-        if ([2024, 2025, 2026].includes(y) && m >= 1 && m <= 12) matrix[m-1][y] = row[metricKey] || 0;
+        if ([2019, 2025, 2026].includes(y) && m >= 1 && m <= 12) matrix[m-1][y] = row[metricKey] || 0;
     });
 
-    let html = <thead><tr><th>月份</th><th>2024年</th><th>2025年</th><th>2026年</th><th>YoY 成長</th></tr></thead><tbody>;
+    let html = `<thead><tr><th>月份</th><th>2019年 (疫前)</th><th>2025年</th><th>2026年</th><th>復甦率 (vs '19)</th><th>YoY 成長 (vs '25)</th></tr></thead><tbody>`;
     matrix.forEach(row => {
-        const val25 = row[2025], val26 = row[2026];
+        const val19 = row[2019], val25 = row[2025], val26 = row[2026];
+        let recHtml = '<span style="color:var(--text-muted)">--</span>';
         let growthHtml = '<span style="color:var(--text-muted)">--</span>';
+        
+        if (val26 > 0 && val19 > 0) {
+            const recovery = (val26 / val19 * 100).toFixed(1);
+            recHtml = `<span style="color: ${parseFloat(recovery) >= 100 ? '#2ed573' : 'var(--text-main)'}">${recovery}%</span>`;
+        }
+        
         if (val26 > 0 && val25 > 0) {
             const growth = ((val26 - val25) / val25 * 100).toFixed(1);
             const isUp = growth >= 0;
-            growthHtml = <span class="growth-indicator "> %</span>;
+            growthHtml = `<span class="growth-indicator ${isUp ? 'indicator-up' : 'indicator-down'}">${isUp ? '↑' : '↓'} ${Math.abs(growth)}%</span>`;
         }
-        html += <tr><td>月</td><td></td><td></td><td style="color:var(--primary-neon); font-weight:700"></td><td></td></tr>;
+        
+        html += `<tr>
+            <td>${row.month}月</td>
+            <td>${val19 > 0 ? val19.toLocaleString() : '--'}</td>
+            <td>${val25 > 0 ? val25.toLocaleString() : '--'}</td>
+            <td style="color:var(--primary-neon); font-weight:700">${val26 > 0 ? val26.toLocaleString() : '--'}</td>
+            <td>${recHtml}</td>
+            <td>${growthHtml}</td>
+        </tr>`;
     });
     tableElem.innerHTML = html + '</tbody>';
 }
@@ -207,6 +231,7 @@ function renderCharts() {
     renderRecoveryChart(state.currentMetric);
     renderMonthlyComparisonChart();
     renderResidencePieChart();
+    renderComparisonTable(state.currentMetric); // Fixed: Added table rendering here
 }
 
 function renderRecoveryChart(metricKey) {
@@ -235,7 +260,7 @@ function renderRecoveryChart(metricKey) {
             labels: labels,
             datasets: [
                 { label: '2019 基準', data: baseline, borderColor: 'rgba(255, 255, 255, 0.2)', borderDash: [5, 5], borderWidth: 1, pointRadius: 0, fill: false },
-                { label: ${metricKey} 人次, data: values, borderColor: CHART_COLORS.asia, backgroundColor: 'rgba(0, 242, 254, 0.1)', borderWidth: 3, fill: true, tension: 0.4, pointRadius: 4 }
+                { label: `${metricKey} 人次`, data: values, borderColor: CHART_COLORS.asia, backgroundColor: 'rgba(0, 242, 254, 0.1)', borderWidth: 3, fill: true, tension: 0.4, pointRadius: 4 }
             ]
         },
         options: {
@@ -254,11 +279,11 @@ function renderMonthlyComparisonChart() {
     const datasets = years.map((y, i) => {
         const monthly = Array(12).fill(0);
         data.forEach(row => { if (row['年別'] + 1911 === y) monthly[row['月份']-1] = row['小計']; });
-        return { label: ${y}年, data: monthly, borderColor: yearColors[i], borderWidth: 2, tension: 0.3, pointRadius: 3, fill: false };
+        return { label: `${y}年`, data: monthly, borderColor: yearColors[i], borderWidth: 2, tension: 0.3, pointRadius: 3, fill: false };
     });
 
     const ctx = document.getElementById('monthlyComparisonChart')?.getContext('2d');
-    if (!ctx || !state.charts) return;
+    if (!ctx) return;
     if (state.charts['monthlyCompare']) state.charts['monthlyCompare'].destroy();
     state.charts['monthlyCompare'] = new Chart(ctx, {
         type: 'line',
@@ -273,7 +298,8 @@ function renderResidencePieChart() {
     const snapshot = data.filter(r => r['年別']+1911 === currentYear);
     const latestMonth = Math.max(...snapshot.map(r => r['月份']));
     
-    document.getElementById('pie-chart-title').innerText = ${currentYear}年月 客源體系;
+    const titleElem = document.getElementById('pie-chart-title');
+    if (titleElem) titleElem.innerText = `${currentYear}年${latestMonth}月 客源體系`;
 
     const countryMap = {};
     DETAILED_LIST.forEach(c => countryMap[c] = snapshot.filter(r => r['月份'] === latestMonth).reduce((acc, row) => acc + (row[c] || 0), 0));
@@ -305,9 +331,9 @@ function renderContinentsChart() {
     const recovery = keys.map(k => (yearlyMap[2025][k] / (yearlyMap[2019][k] || 1) * 100).toFixed(1));
     const momentum = keys.map(k => ((yearlyMap[2025][k]-yearlyMap[2024][k]) / (yearlyMap[2024][k] || 1) * 100).toFixed(1));
 
-    document.getElementById('continent-hero-recovery').innerText = ${labels[recovery.indexOf(String(Math.max(...recovery)))]} (%);
-    document.getElementById('continent-hero-momentum').innerText = ${labels[momentum.indexOf(String(Math.max(...momentum)))]} (+%);
-    document.getElementById('continent-hero-volume').innerText = ${labels[keys.indexOf(keys.reduce((a, b) => yearlyMap[2025][a] > yearlyMap[2025][b] ? a : b)) ]};
+    document.getElementById('continent-hero-recovery').innerText = `${labels[recovery.indexOf(String(Math.max(...recovery)))]} (${Math.max(...recovery)}%)`;
+    document.getElementById('continent-hero-momentum').innerText = `${labels[momentum.indexOf(String(Math.max(...momentum)))]} (+${Math.max(...momentum)}%)`;
+    document.getElementById('continent-hero-volume').innerText = `${labels[keys.indexOf(keys.reduce((a, b) => yearlyMap[2025][a] > yearlyMap[2025][b] ? a : b)) ]}`;
 
     const ctxRadar = document.getElementById('continentRadarChart')?.getContext('2d');
     if (ctxRadar) {
@@ -338,8 +364,6 @@ function renderCountriesChart(data, filterYear) {
         if (filterYear === 'all' || String(y) === filterYear) DETAILED_LIST.forEach(c => countryMap[c] += (row[c] || 0));
     });
     const sorted = Object.entries(countryMap).sort((a,b) => b[1] - a[1]);
-    
-    // Professional Multi-color Set (No Yellow)
     const profColors = [CHART_COLORS.asia, '#4facfe', CHART_COLORS.americas, CHART_COLORS.europe, '#fbc2eb', CHART_COLORS.africa, '#a18cd1', '#fe5f75', '#00f2fe', '#4facfe', '#94a3b8'];
 
     const ctx = document.getElementById('countryRankingChart')?.getContext('2d');
@@ -365,18 +389,27 @@ function updateKPIs(isInitial = false) {
     const recovery = (total25 / total19 * 100).toFixed(1);
     const growth = ((total25 - total24) / total24 * 100).toFixed(1);
 
-    document.getElementById('kpi-current-year').innerText = total25.toLocaleString();
+    const kpiVal = document.getElementById('kpi-current-year');
     const trendElem = document.getElementById('kpi-trend-current');
-    trendElem.innerText = ↑ % vs 2024;
-    trendElem.className = kpi-trend ;
-    document.getElementById('kpi-recovery-rate').innerText = ${recovery}%;
-    document.getElementById('kpi-recovery-status').innerText = recovery >= 100 ? '超額回流' : '穩健向 2019 靠攏';
+    const recRate = document.getElementById('kpi-recovery-rate');
+    const recStat = document.getElementById('kpi-recovery-status');
+
+    if (kpiVal) kpiVal.innerText = total25.toLocaleString();
+    if (trendElem) {
+        trendElem.innerText = `↑ ${growth}% vs 2024`;
+        trendElem.className = `kpi-trend ${growth >= 0 ? 'positive' : 'negative'}`;
+    }
+    if (recRate) recRate.innerText = `${recovery}%`;
+    if (recStat) recStat.innerText = recovery >= 100 ? '超額回流' : '穩健向 2019 靠攏';
 
     const countryMap25 = {};
     DETAILED_LIST.forEach(c => countryMap25[c] = 0);
     state.detailedData.forEach(row => { if (row['年別'] + 1911 === 2025) DETAILED_LIST.forEach(c => countryMap25[c] += (row[c] || 0)); });
-    const topMarket = Object.entries(countryMap25).sort((a,b) => b[1] - a[1]).slice(0, 2).map(s => s[0]).join(' / ');
-    document.getElementById('kpi-top-market').innerText = topMarket;
+    const sortedMarkets = Object.entries(countryMap25).sort((a,b) => b[1] - a[1]);
+    const topMarketText = sortedMarkets.slice(0, 2).map(s => s[0]).join(' / ');
+    
+    const topMktElem = document.getElementById('kpi-top-market');
+    if (topMktElem) topMktElem.innerText = topMarketText;
 
     if (isInitial) renderCountriesChart(state.detailedData, 'all');
 }
@@ -384,10 +417,10 @@ function updateKPIs(isInitial = false) {
 function updateSeasonalInsight(metric, recovery) {
     const insightElem = document.getElementById('seasonal-insight');
     if (!insightElem) return;
-    let text = 當前 <span></span> 市場已恢復至 2019 同期的 <span>%</span>，整體復甦動能穩健。;
-    if (metric === '日本') text = 日本市場目前恢復達 <span>%</span>。近期賞楓與商務差旅需求強勁，帶動 2026 高成長。;
-    if (metric === '韓國') text = 韓國市場復甦亮眼 (<span>%</span>)。第一季為高爾夫與團體旅遊旺季。;
-    if (parseFloat(recovery) > 100) text = 驚人！<span></span> 已超越 2019 水準 (<span>%</span>)，成為現階段明星市場。;
+    let text = `當前 <span>${metric}</span> 市場已恢復至 2019 同期的 <span>${recovery}%</span>，整體復甦動能穩健。`;
+    if (metric === '日本') text = `日本市場目前恢復達 <span>${recovery}%</span>。近期賞楓與商務差旅需求強勁，帶動 2026 高成長。`;
+    if (metric === '韓國') text = `韓國市場復甦亮眼 (<span>${recovery}%</span>)。第一季為高爾夫與團體旅遊旺季。`;
+    if (parseFloat(recovery) > 100) text = `驚人！<span>${metric}</span> 已超越 2019 水準 (<span>${recovery}%</span>)，成為現階段明星市場。`;
     insightElem.innerHTML = text;
 }
 

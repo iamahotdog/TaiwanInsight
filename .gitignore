@@ -1,3 +1,5 @@
+# ======= GitHub Pages / Web Project Gitignore =======
+
 # Dependency directories
 node_modules/
 
@@ -12,7 +14,7 @@ desktop.ini
 *.swp
 *.swo
 
-# Python
+# Python (Local Data Engineering Scripts)
 __pycache__/
 *.py[cod]
 *$py.class
@@ -20,10 +22,9 @@ convert.py
 force_convert.py
 extract_data.py
 
-# Data sources (Optional: un-comment if you don't want to push CSVs)
-# *.csv
-
 # Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# (Notice: .csv, .html, .css, .js are explicitly NOT ignored so they can be pushed to GitHub)

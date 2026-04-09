@@ -23,7 +23,7 @@ const DETAILED_LIST = ['日本', '韓國', '美國', '香港', '新加坡', '馬
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
-    
+
     if (typeof TOURISM_DATA !== 'undefined') {
         const clean = (d) => {
             if (!Array.isArray(d)) return [];
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hideLoader();
         updateHeroSummary();
         updateKPIs(true);
-        updateMarketScorecard(state.currentMetric); 
+        updateMarketScorecard(state.currentMetric);
         renderCharts();
     }
 });
@@ -85,10 +85,10 @@ function initNavigation() {
             const text = e.target.options[e.target.selectedIndex].text;
             const insightTarget = document.getElementById('insight-target-name');
             if (insightTarget) insightTarget.innerText = text.split(' ')[0];
-            
+
             renderRecoveryChart(state.currentMetric);
             renderComparisonTable(state.currentMetric);
-            updateMarketScorecard(state.currentMetric); 
+            updateMarketScorecard(state.currentMetric);
         });
     }
 
@@ -102,7 +102,7 @@ function initNavigation() {
 
 function updateMarketScorecard(metricKey) {
     const data = DETAILED_LIST.includes(metricKey) ? state.detailedData : state.overviewData;
-    
+
     let ytd26 = 0, ytd25 = 0, ytd19 = 0;
     let latestMonth = 0;
 
@@ -137,8 +137,8 @@ function updateMarketScorecard(metricKey) {
         momElem.innerText = `${momentum >= 0 ? '+' : ''}${momentum}%`;
         momElem.className = `score-value ${momentum >= 0 ? '' : 'text-coral'}`;
     }
-    
-    updateSeasonalInsight(metricKey, recovery); 
+
+    updateSeasonalInsight(metricKey, recovery);
 }
 
 function updateHeroSummary() {
@@ -187,7 +187,7 @@ function updateHeroSummary() {
         }
     });
 
-    const sorted = Object.entries(countryAgg).sort((a,b) => b[1] - a[1]).slice(0, 5);
+    const sorted = Object.entries(countryAgg).sort((a, b) => b[1] - a[1]).slice(0, 5);
     const maxVal = sorted[0][1] || 1;
     const topListElem = document.getElementById('hero-top-countries');
     if (!topListElem) return;
@@ -210,11 +210,19 @@ function renderComparisonTable(metricKey) {
     const tableElem = document.getElementById('comparisonTable');
     if (!tableElem) return;
 
-    const matrix = Array.from({length: 12}, (_, i) => ({ month: i + 1, 2019: 0, 2025: 0, 2026: 0 }));
+    const matrix = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, 2019: 0, 2025: 0, 2026: 0 }));
+    let sum2019 = 0, sum2025 = 0, sum2026 = 0;
+
     data.forEach(row => {
         const y = row['年別'] + 1911;
         const m = row['月份'];
-        if ([2019, 2025, 2026].includes(y) && m >= 1 && m <= 12) matrix[m-1][y] = row[metricKey] || 0;
+        const val = row[metricKey] || 0;
+        if ([2019, 2025, 2026].includes(y) && m >= 1 && m <= 12) {
+            matrix[m - 1][y] = val;
+            if (y === 2019) sum2019 += val;
+            if (y === 2025) sum2025 += val;
+            if (y === 2026) sum2026 += val;
+        }
     });
 
     let html = `<thead><tr><th>月份</th><th>2019年 (疫前)</th><th>2025年</th><th>2026年</th><th>復甦率 (vs '19)</th><th>YoY 成長 (vs '25)</th></tr></thead><tbody>`;
@@ -222,18 +230,18 @@ function renderComparisonTable(metricKey) {
         const val19 = row[2019], val25 = row[2025], val26 = row[2026];
         let recHtml = '<span style="color:var(--text-muted)">--</span>';
         let growthHtml = '<span style="color:var(--text-muted)">--</span>';
-        
+
         if (val26 > 0 && val19 > 0) {
             const recovery = (val26 / val19 * 100).toFixed(1);
             recHtml = `<span style="color: ${parseFloat(recovery) >= 100 ? '#2ed573' : 'var(--text-main)'}">${recovery}%</span>`;
         }
-        
+
         if (val26 > 0 && val25 > 0) {
             const growth = ((val26 - val25) / val25 * 100).toFixed(1);
             const isUp = growth >= 0;
             growthHtml = `<span class="growth-indicator ${isUp ? 'indicator-up' : 'indicator-down'}">${isUp ? '↑' : '↓'} ${Math.abs(growth)}%</span>`;
         }
-        
+
         html += `<tr>
             <td>${row.month}月</td>
             <td>${val19 > 0 ? val19.toLocaleString() : '--'}</td>
@@ -243,6 +251,37 @@ function renderComparisonTable(metricKey) {
             <td>${growthHtml}</td>
         </tr>`;
     });
+
+    let sum19_ytd = 0, sum25_ytd = 0;
+    matrix.forEach(row => {
+        if (row[2026] > 0) {
+            sum19_ytd += row[2019];
+            sum25_ytd += row[2025];
+        }
+    });
+
+    let sumRecHtml = '<span style="color:var(--text-muted)">--</span>';
+    let sumGrowthHtml = '<span style="color:var(--text-muted)">--</span>';
+
+    if (sum2026 > 0 && sum19_ytd > 0) {
+        const rec = (sum2026 / sum19_ytd * 100).toFixed(1);
+        sumRecHtml = `<span style="color: ${parseFloat(rec) >= 100 ? '#2ed573' : 'var(--text-main)'}">${rec}%</span>`;
+    }
+    if (sum2026 > 0 && sum25_ytd > 0) {
+        const grow = ((sum2026 - sum25_ytd) / sum25_ytd * 100).toFixed(1);
+        const isUp = grow >= 0;
+        sumGrowthHtml = `<span class="growth-indicator ${isUp ? 'indicator-up' : 'indicator-down'}">${isUp ? '↑' : '↓'} ${Math.abs(grow)}%</span>`;
+    }
+
+    html += `<tr class="total-row" style="background: rgba(255,255,255,0.05); font-weight: bold; border-top: 1px solid rgba(255,255,255,0.2);">
+        <td>總計</td>
+        <td>${sum2019 > 0 ? sum2019.toLocaleString() : '--'}</td>
+        <td>${sum2025 > 0 ? sum2025.toLocaleString() : '--'}</td>
+        <td style="color:var(--primary-neon);">${sum2026 > 0 ? sum2026.toLocaleString() : '--'}</td>
+        <td>${sumRecHtml}</td>
+        <td>${sumGrowthHtml}</td>
+    </tr>`;
+
     tableElem.innerHTML = html + '</tbody>';
 }
 
@@ -257,7 +296,7 @@ function renderRecoveryChart(metricKey) {
     const data = DETAILED_LIST.includes(metricKey) ? state.detailedData : state.overviewData;
     const yearlyData = {};
     const labels = [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
-    
+
     let total19 = 0;
     data.forEach(row => {
         const y = row['年別'] + 1911;
@@ -292,13 +331,22 @@ function renderRecoveryChart(metricKey) {
 
 function renderMonthlyComparisonChart() {
     const data = state.overviewData;
-    const years = [2023, 2024, 2025, 2026];
-    const yearColors = [CHART_COLORS.americas, '#4facfe', CHART_COLORS.asia, '#ff4757'];
-    
+    const years = [2019, 2023, 2024, 2025, 2026];
+    const yearColors = ['rgba(255, 255, 255, 0.4)', CHART_COLORS.americas, '#4facfe', CHART_COLORS.asia, '#ff4757'];
+
     const datasets = years.map((y, i) => {
         const monthly = Array(12).fill(null);
-        data.forEach(row => { if (row['年別'] + 1911 === y) monthly[row['月份']-1] = row['小計']; });
-        return { label: `${y}年`, data: monthly, borderColor: yearColors[i], borderWidth: 2, tension: 0.3, pointRadius: 3, fill: false };
+        data.forEach(row => { if (row['年別'] + 1911 === y) monthly[row['月份'] - 1] = row['小計']; });
+        return { 
+            label: `${y}年${y === 2019 ? ' (疫前)' : ''}`, 
+            data: monthly, 
+            borderColor: yearColors[i], 
+            borderWidth: y === 2019 ? 1 : 2, 
+            borderDash: y === 2019 ? [5, 5] : [],
+            tension: 0.3, 
+            pointRadius: y === 2019 ? 0 : 3, 
+            fill: false 
+        };
     });
 
     const ctx = document.getElementById('monthlyComparisonChart')?.getContext('2d');
@@ -314,16 +362,18 @@ function renderMonthlyComparisonChart() {
 function renderResidencePieChart() {
     const data = state.detailedData;
     const currentYear = 2026;
-    const snapshot = data.filter(r => r['年別']+1911 === currentYear);
+    const snapshot = data.filter(r => r['年別'] + 1911 === currentYear);
     const latestMonth = Math.max(...snapshot.map(r => r['月份']));
-    
+
     const titleElem = document.getElementById('pie-chart-title');
-    if (titleElem) titleElem.innerText = `${currentYear}年${latestMonth}月 客源體系`;
+    if (titleElem) titleElem.innerText = `${currentYear}年1-${latestMonth}月 累計客源體系`;
 
     const countryMap = {};
-    DETAILED_LIST.forEach(c => countryMap[c] = snapshot.filter(r => r['月份'] === latestMonth).reduce((acc, row) => acc + (row[c] || 0), 0));
+    DETAILED_LIST.forEach(c => {
+        countryMap[c] = snapshot.filter(r => r['月份'] <= latestMonth).reduce((acc, row) => acc + (row[c] || 0), 0);
+    });
 
-    const sorted = Object.entries(countryMap).sort((a,b) => b[1] - a[1]);
+    const sorted = Object.entries(countryMap).sort((a, b) => b[1] - a[1]);
     const ctx = document.getElementById('residencePieChart')?.getContext('2d');
     if (!ctx) return;
     if (state.charts['residencePie']) state.charts['residencePie'].destroy();
@@ -343,16 +393,16 @@ function renderContinentsChart() {
     const keys = ['亞洲地區', '美洲地區', '歐洲地區', '大洋洲地區', '非洲地區'];
     const years = [2019, 2024, 2025];
     const yearlyMap = { 2019: {}, 2024: {}, 2025: {} };
-    keys.forEach(k => { yearlyMap[2019][k]=0; yearlyMap[2024][k]=0; yearlyMap[2025][k]=0; });
-    data.forEach(row => { const y = row['年別']+1911; if (yearlyMap[y]) keys.forEach(k => yearlyMap[y][k] += (row[k] || 0)); });
+    keys.forEach(k => { yearlyMap[2019][k] = 0; yearlyMap[2024][k] = 0; yearlyMap[2025][k] = 0; });
+    data.forEach(row => { const y = row['年別'] + 1911; if (yearlyMap[y]) keys.forEach(k => yearlyMap[y][k] += (row[k] || 0)); });
 
     const labels = ['亞洲', '美洲', '歐洲', '大洋洲', '非洲'];
     const recovery = keys.map(k => (yearlyMap[2025][k] / (yearlyMap[2019][k] || 1) * 100).toFixed(1));
-    const momentum = keys.map(k => ((yearlyMap[2025][k]-yearlyMap[2024][k]) / (yearlyMap[2024][k] || 1) * 100).toFixed(1));
+    const momentum = keys.map(k => ((yearlyMap[2025][k] - yearlyMap[2024][k]) / (yearlyMap[2024][k] || 1) * 100).toFixed(1));
 
     document.getElementById('continent-hero-recovery').innerText = `${labels[recovery.indexOf(String(Math.max(...recovery)))]} (${Math.max(...recovery)}%)`;
     document.getElementById('continent-hero-momentum').innerText = `${labels[momentum.indexOf(String(Math.max(...momentum)))]} (+${Math.max(...momentum)}%)`;
-    document.getElementById('continent-hero-volume').innerText = `${labels[keys.indexOf(keys.reduce((a, b) => yearlyMap[2025][a] > yearlyMap[2025][b] ? a : b)) ]}`;
+    document.getElementById('continent-hero-volume').innerText = `${labels[keys.indexOf(keys.reduce((a, b) => yearlyMap[2025][a] > yearlyMap[2025][b] ? a : b))]}`;
 
     const ctxRadar = document.getElementById('continentRadarChart')?.getContext('2d');
     if (ctxRadar) {
@@ -382,7 +432,7 @@ function renderCountriesChart(data, filterYear) {
         const y = row['年別'] + 1911;
         if (filterYear === 'all' || String(y) === filterYear) DETAILED_LIST.forEach(c => countryMap[c] += (row[c] || 0));
     });
-    const sorted = Object.entries(countryMap).sort((a,b) => b[1] - a[1]);
+    const sorted = Object.entries(countryMap).sort((a, b) => b[1] - a[1]);
     const profColors = [CHART_COLORS.asia, '#4facfe', CHART_COLORS.americas, CHART_COLORS.europe, '#fbc2eb', CHART_COLORS.africa, '#a18cd1', '#fe5f75', '#00f2fe', '#4facfe', '#94a3b8'];
 
     const ctx = document.getElementById('countryRankingChart')?.getContext('2d');
@@ -397,36 +447,54 @@ function renderCountriesChart(data, filterYear) {
 
 function updateKPIs(isInitial = false) {
     const data = state.overviewData;
-    let total25 = 0, total24 = 0, total19 = 0;
+    let latestMonth = 0;
     data.forEach(row => {
-        const y = row['年別'] + 1911;
-        if (y === 2025) total25 += row['小計'];
-        if (y === 2024) total24 += row['小計'];
-        if (y === 2019) total19 += row['小計'];
+        if (row['年別'] + 1911 === 2026 && row['月份'] > latestMonth) {
+            latestMonth = row['月份'];
+        }
     });
 
-    const recovery = (total25 / total19 * 100).toFixed(1);
-    const growth = ((total25 - total24) / total24 * 100).toFixed(1);
+    let total26 = 0, total25_ytd = 0, total19_ytd = 0;
+    data.forEach(row => {
+        const y = row['年別'] + 1911;
+        const m = row['月份'];
+        if (y === 2026 && m <= latestMonth) total26 += row['小計'];
+        if (y === 2025 && m <= latestMonth) total25_ytd += row['小計'];
+        if (y === 2019 && m <= latestMonth) total19_ytd += row['小計'];
+    });
+
+    const recovery = (total26 / (total19_ytd || 1) * 100).toFixed(1);
+    const growth = ((total26 - total25_ytd) / (total25_ytd || 1) * 100).toFixed(1);
 
     const kpiVal = document.getElementById('kpi-current-year');
     const trendElem = document.getElementById('kpi-trend-current');
     const recRate = document.getElementById('kpi-recovery-rate');
     const recStat = document.getElementById('kpi-recovery-status');
 
-    if (kpiVal) kpiVal.innerText = total25.toLocaleString();
+    const labelCurrent = document.getElementById('kpi-label-current');
+    const labelTop = document.getElementById('kpi-label-top');
+    if (labelCurrent) labelCurrent.innerText = `2026年1-${latestMonth}月 累計人次`;
+    if (labelTop) labelTop.innerText = `主要客源貢獻 (2026 YTD)`;
+
+    if (kpiVal) kpiVal.innerText = total26.toLocaleString();
     if (trendElem) {
-        trendElem.innerText = `↑ ${growth}% vs 2024`;
-        trendElem.className = `kpi-trend ${growth >= 0 ? 'positive' : 'negative'}`;
+        let isUp = growth >= 0;
+        trendElem.innerText = `${isUp ? '↑' : '↓'} ${Math.abs(growth)}% vs 2025同期`;
+        trendElem.className = `kpi-trend ${isUp ? 'positive' : 'negative'}`;
     }
     if (recRate) recRate.innerText = `${recovery}%`;
     if (recStat) recStat.innerText = recovery >= 100 ? '超額回流' : '穩健向 2019 靠攏';
 
-    const countryMap25 = {};
-    DETAILED_LIST.forEach(c => countryMap25[c] = 0);
-    state.detailedData.forEach(row => { if (row['年別'] + 1911 === 2025) DETAILED_LIST.forEach(c => countryMap25[c] += (row[c] || 0)); });
-    const sortedMarkets = Object.entries(countryMap25).sort((a,b) => b[1] - a[1]);
+    const countryMap26 = {};
+    DETAILED_LIST.forEach(c => countryMap26[c] = 0);
+    state.detailedData.forEach(row => { 
+        if (row['年別'] + 1911 === 2026 && row['月份'] <= latestMonth) {
+            DETAILED_LIST.forEach(c => countryMap26[c] += (row[c] || 0)); 
+        } 
+    });
+    const sortedMarkets = Object.entries(countryMap26).sort((a, b) => b[1] - a[1]);
     const topMarketText = sortedMarkets.slice(0, 2).map(s => s[0]).join(' / ');
-    
+
     const topMktElem = document.getElementById('kpi-top-market');
     if (topMktElem) topMktElem.innerText = topMarketText;
 
